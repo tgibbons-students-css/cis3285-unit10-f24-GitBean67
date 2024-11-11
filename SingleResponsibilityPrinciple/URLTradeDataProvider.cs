@@ -9,15 +9,16 @@ namespace SingleResponsibilityPrinciple
 {
     public class URLTradeDataProvider : ITradeDataProvider
     {
-        string url;
-        ILogger logger;
+        private readonly string url;
+        private readonly ILogger logger;
+
         public URLTradeDataProvider(string url, ILogger logger)
         {
             this.url = url;
             this.logger = logger;
         }
 
-        public IEnumerable<string> GetTradeData()
+        public Task<IEnumerable<string>> GetTradeDataAsync()
         {
             List<string> tradeData = new List<string>();
             logger.LogInfo("Reading trades from URL: " + url);
@@ -41,7 +42,8 @@ namespace SingleResponsibilityPrinciple
                     }
                 }
             }
-            return tradeData;
+
+            return Task.FromResult<IEnumerable<string>>(tradeData);
         }
     }
 }

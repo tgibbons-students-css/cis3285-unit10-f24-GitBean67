@@ -10,9 +10,9 @@ namespace SingleResponsibilityPrinciple
 {
     public class RestfulTradeDataProvider : ITradeDataProvider
     {
-        string url;
-        ILogger logger;
-        HttpClient client = new HttpClient();
+        private readonly string url;
+        private readonly ILogger logger;
+        private readonly HttpClient client = new HttpClient();
 
         public RestfulTradeDataProvider(string url, ILogger logger)
         {
@@ -20,29 +20,41 @@ namespace SingleResponsibilityPrinciple
             this.logger = logger;
         }
 
-        async Task<List<string>> GetTradeAsync()
+        private async Task<List<string>> GetTradeAsync()
         {
             logger.LogInfo("Connecting to the Restful server using HTTP");
             List<string> tradesString = null;
 
-            HttpResponseMessage response = await client.GetAsync(url);
-            if (response.IsSuccessStatusCode)
+            try
             {
-                // Read the content as a string and deserialize it into a List<string>
-                string content = await response.Content.ReadAsStringAsync();
-                tradesString = JsonSerializer.Deserialize<List<string>>(content);
-                logger.LogInfo("Received trade strings of length = " + tradesString.Count);
+                HttpResponseMessage response = await client.GetAsync(url);
+                if (response.IsSuccessStatusCode)
+                {
+                    // Read the content as a string and deserialize it into a List<string>
+                    string content = await response.Content.ReadAsStringAsync();
+                    tradesString = JsonSerializer.Deserialize<List<string>>(content);
+                    logger.LogInfo("Received trade strings of length = " + tradesString.Count);
+                }
+                else
+                {
+                    logger.LogWarning("Failed to retrieve trade data.");
+                }
             }
+            catch (Exception ex)
+            {
+                logger.LogWarning("Exception occurred while fetching trades: " + ex.Message);
+            }
+
             return tradesString;
         }
 
-        public IEnumerable<string> GetTradeData()
+        public async Task<IEnumerable<string>> GetTradeDataAsync()
         {
-            Task<List<string>> task = Task.Run(() => GetTradeAsync());
-            task.Wait();
+            var trades = await GetTradeAsync();
 
-            List<string> tradeList = task.Result;
-            return tradeList;
+            // Return trades if it's not null, otherwise return an empty list
+            return trades ?? new List<string>();
         }
+
     }
 }
